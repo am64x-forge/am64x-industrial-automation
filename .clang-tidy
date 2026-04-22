@@ -1,0 +1,23 @@
+Checks: >
+  -*,
+  bugprone-*,
+  clang-analyzer-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  cppcoreguidelines-*
+WarningsAsErrors: >
+  bugprone-*,
+  clang-analyzer-*,
+  performance-*,
+  portability-*
+HeaderFilterRegex: '^(firmware|linux-apps|platform|tools|tests)/.*'
+FormatStyle: none
+CheckOptions:
+  - key: modernize-use-trailing-return-type.MinTypeNameLength
+    value: '6'
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case

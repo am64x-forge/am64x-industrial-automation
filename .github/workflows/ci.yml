@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint-and-static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff mypy
+          sudo apt-get update
+          sudo apt-get install -y clang-format clang-tidy cppcheck
+
+      - name: Python lint (ruff)
+        run: |
+          if find linux-apps tools tests -type f -name "*.py" | grep -q .; then
+            ruff check linux-apps tools tests
+          else
+            echo "No Python files found; skipping ruff."
+          fi
+
+      - name: Python type check (mypy)
+        run: |
+          if find linux-apps tools tests -type f -name "*.py" | grep -q .; then
+            mypy linux-apps tools tests
+          else
+            echo "No Python files found; skipping mypy."
+          fi
+
+      - name: C/C++ formatting check
+        run: |
+          if find firmware linux-apps platform tests tools -type f \( -name "*.c" -o -name "*.cc" -o -name "*.cpp" -o -name "*.cxx" -o -name "*.h" -o -name "*.hh" -o -name "*.hpp" -o -name "*.hxx" \) | grep -q .; then
+            find firmware linux-apps platform tests tools -type f \( -name "*.c" -o -name "*.cc" -o -name "*.cpp" -o -name "*.cxx" -o -name "*.h" -o -name "*.hh" -o -name "*.hpp" -o -name "*.hxx" \) -print0 | xargs -0 -n1 clang-format --dry-run --Werror
+          else
+            echo "No C/C++ files found; skipping clang-format."
+          fi
+
+      - name: C/C++ static analysis (cppcheck)
+        run: |
+          if find firmware linux-apps platform tests tools -type f \( -name "*.c" -o -name "*.cc" -o -name "*.cpp" -o -name "*.cxx" \) | grep -q .; then
+            cppcheck --enable=warning,style,performance,portability --error-exitcode=1 firmware linux-apps platform tests tools
+          else
+            echo "No C/C++ source files found; skipping cppcheck."
+          fi
+
+  build-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build gperf ccache device-tree-compiler libmagic1
+
+      - name: CMake smoke build (if CMakeLists.txt exists)
+        run: |
+          if [ -f CMakeLists.txt ]; then
+            cmake -S . -B build -G Ninja
+            cmake --build build
+          else
+            echo "No top-level CMakeLists.txt; skipping CMake smoke build."
+          fi
+
+      - name: Zephyr smoke build (if west.yml exists)
+        run: |
+          if [ -f west.yml ]; then
+            python -m pip install --upgrade pip
+            pip install west
+            west init -l .
+            west update
+            west zephyr-export
+            pip install -r zephyr/scripts/requirements.txt
+            west build -p always -b native_sim firmware/zephyr/samples/hello_oz
+          else
+            echo "No west.yml; skipping Zephyr smoke build."
+          fi
