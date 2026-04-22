@@ -66,3 +66,17 @@ find /Users/sam/am64x-industrial-automation -type d | sort
 - Remote: `git@github.com:am64x-forge/am64x-industrial-automation.git`
 - Initial commit: `ed2562a`
 
+## 9) Additional commands used afterward (to version this runbook)
+
+These were used when this runbook itself was added and pushed:
+
+```bash
+git -C /Users/sam/am64x-industrial-automation --no-pager status --short --branch
+git -C /Users/sam/am64x-industrial-automation add docs/runbooks/setup-from-scratch.md
+git -C /Users/sam/am64x-industrial-automation commit -m "Add setup-from-scratch command runbook" -m "Co-Authored-By: Oz <oz-agent@warp.dev>"
+git -C /Users/sam/am64x-industrial-automation push -u origin main
+```
+
+Resulting follow-up commit:
+- `d3025ad` (`Add setup-from-scratch command runbook`)
+
